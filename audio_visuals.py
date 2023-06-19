@@ -15,7 +15,7 @@ for path, subdirs, files in os.walk(root):
         plt.figure()
         plt.subplot(1, 1, 1)
         y, sr = librosa.load(filename)
-        librosa.display.waveshow(y, sr=sr, axis='time', color='cyan')
+        librosa.display.waveshow(y, sr=sr, axis='time', color='cyan',)
         plt.title("Waveform")
         plt.savefig(figname + "_Wav.JPEG")
         plt.close()
