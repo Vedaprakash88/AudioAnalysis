@@ -5,8 +5,8 @@ import os
 
 root = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\Data\\genres_original\\"
 targetdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\Mel_spec\\"
-target_folders = [sub for pth, sub, fls in os.walk(root)][0]
-root_folders = [sub2 for pth2, sub2, fls2 in os.walk(targetdir)][0]
+target_folders = os.listdir(root)
+root_folders = os.listdir(targetdir)
 target_folders.sort(reverse=False)
 root_folders.sort(reverse=False)
 
