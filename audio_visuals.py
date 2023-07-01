@@ -19,14 +19,16 @@ if target_folders != root_folders:
 for path, subdirs, files in os.walk(root):
     for name in files:
         filename = os.path.join(path, name)
+        y, sr = librosa.load(filename)
+        target_folder = os.path.join(targetdir, os.path.basename(os.path.normpath(path)))
+        fig_name = os.path.join(target_folder, name[:len(name) - 4])
+
+        # waveform
         plt.figure()
         plt.subplot(1, 1, 1)
-        y, sr = librosa.load(filename)
-        librosa.display.waveshow(y, sr=sr, axis='time', color='cyan',)
-        plt.title("Waveform")
-        target_folder = os.path.join(targetdir ,os.path.basename(os.path.normpath(path)))
-        fig_name = os.path.join(target_folder, name[:len(name)-4])
-        plt.savefig(fig_name + "_Wav.JPEG")
+        librosa.display.waveshow(y, sr=sr, axis='time', color='cyan')
+        plt.axis('off')
+        plt.savefig(fig_name + "_Wav.JPEG", bbox_inches='tight', pad_inches=-0.1)
         plt.close()
 
         # Visualizing MFCC
@@ -34,10 +36,8 @@ for path, subdirs, files in os.walk(root):
         mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
         fig, ax = plt.subplots(nrows=1, sharex=True)
         img = librosa.display.specshow(mfccs, x_axis='time')
-        fig.colorbar(img)
-        ax.set(title='MFCC')
-        ax.label_outer()
-        plt.savefig(fig_name + "_MFCC.JPEG")
+        plt.axis('off')
+        plt.savefig(fig_name + "_MFCC.JPEG", bbox_inches='tight', pad_inches=-0.1)
         plt.close()
 
         # Visualizing Mel_Spec
