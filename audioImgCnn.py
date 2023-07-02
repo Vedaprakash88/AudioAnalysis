@@ -8,8 +8,9 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Dropout
+from tensorflow.python.keras.metrics import Precision, Recall, BinaryAccuracy
+from tensorflow.python.keras.models import load_model
 import math
-
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
@@ -117,12 +118,153 @@ model.add(MaxPooling2D())
 
 model.add(Flatten())
 
+''' 
+The Input Layer
+
+Every NN has exactly one of them.
+
+Number of nurons in this layer is determined by the shape of the input data. 
+Specifically, the number of features / columns in the training data (here its 256). 
+Some NN configurations add one additional node for a bias term.
+
+'''
+
 model.add(Dense(256, activation='relu'))
+
+'''
+The Hidden layer
+
+When designing a neural network, the number of neurons in each layer, including the Dense layer, is typically determined
+by the complexity of the problem you're trying to solve and the size of the input data. The number of neurons can be 
+adjusted as a hyperparameter during the model development process, and it often requires some experimentation and 
+tuning to find the optimal architecture for a specific task.
+
+Jeff Heaton - Introduction to Neural Networks for Java, Second Edition The Number of Hidden Layers
+
+The Number of Hidden Layers
+
+There are really two decisions that must be made regarding the hidden layers: how many hidden layers to actually have 
+in the neural network and how many neurons will be in each of these layers. We will first examine how to determine the 
+number of hidden layers to use with the neural network.
+
+Problems that require two hidden layers are rarely encountered. However, neural networks with two hidden layers can 
+represent functions with any kind of shape. There is currently no theoretical reason to use neural networks with any 
+more than two hidden layers. In fact, for many practical problems, there is no reason to use any more than one hidden 
+layer. Table 5.1 summarizes the capabilities of neural network architectures with various hidden layers.
+
+            0 - Only capable of representing linear separable functions or decisions.
+
+            1 - Can approximate any function that contains a continuous mapping
+                from one finite space to another.
+
+            2 - Can represent an arbitrary decision boundary to arbitrary accuracy
+                with rational activation functions and can approximate any smooth
+                mapping to any accuracy.
+
+Deciding the number of hidden neuron layers is only a small part of the problem. You must also determine how many 
+neurons will be in each of these hidden layers. This process is covered in the next section.
+
+The Number of Neurons in the Hidden Layers
+
+Deciding the number of neurons in the hidden layers is a very important part of deciding your overall neural network 
+architecture. Though these layers do not directly interact with the external environment, they have a tremendous 
+influence on the final output. Both the number of hidden layers and the number of neurons in each of these hidden 
+layers must be carefully considered.
+
+Using too few neurons in the hidden layers will result in something called underfitting. Underfitting occurs when 
+there are too few neurons in the hidden layers to adequately detect the signals in a complicated data set.
+
+Using too many neurons in the hidden layers can result in several problems. First, too many neurons in the hidden 
+layers may result in overfitting. Overfitting occurs when the neural network has so much information processing 
+capacity that the limited amount of information contained in the training set is not enough to train all of the 
+neurons in the hidden layers. A second problem can occur even when the training data is sufficient. An inordinately 
+large number of neurons in the hidden layers can increase the time it takes to train the network. The amount of training 
+time can increase to the point that it is impossible to adequately train the neural network. Obviously, some compromise 
+must be reached between too many and too few neurons in the hidden layers.
+
+There are many rule-of-thumb methods for determining the correct number of neurons to use in the hidden layers, 
+such as the following:
+
+The number of hidden neurons should be between the size of the input layer and the size of the output layer.
+The number of hidden neurons should be 2/3 the size of the input layer, plus the size of the output layer.
+The number of hidden neurons should be less than twice the size of the input layer.
+These three rules provide a starting point for you to consider. Ultimately, the selection of an architecture for 
+your neural network will come down to trial and error. But what exactly is meant by trial and error? You do not want to 
+start throwing random numbers of layers and neurons at your network. 
+
+In order to secure the ability of the network to generalize the number of nodes has to be kept as low as possible. 
+If you have a large excess of nodes, you network becomes a memory bank that can recall the training set to perfection 
+(overfitting), but does not perform well on samples that was not part of the training set (underfitting)
+
+'''
+# based on my data I chose to go with 1 hidden layer with mean of input and output neurons, brought close to the
+# bit value of input neurons
+model.add(Dense(128, activation='relu'))
+
+'''
+
+The Output Layer
+
+Like the Input layer, every NN has exactly one output layer. Determining its size (number of neurons) is based on the 
+model:
+
+Regressor: one node as output is just 1 value
+classifier: depends on number of classes i.e., 2 nodes for Binary and 2+ for multi-class classification
+
+'''
 model.add(Dense(10, activation='softmax'))
 
 model.compile('adam', loss=tf.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
 print(model.summary())
 
+logdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\log_dir\\"
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
 
+hist = model.fit(train_data, epochs=17, validation_data=val_data, callbacks=[tensorboard_callback])
 
-
+fig = plt.figure()
+plt.plot(hist.history['loss'], color='teal', label='loss')
+plt.plot(hist.history['val_loss'], color='orange', label='val_loss')
+fig.suptitle('Loss', fontsize=20)
+plt.legend(loc="upper left")
+plt.show()
+#
+# fig = plt.figure()
+# plt.plot(hist.history['accuracy'], color='teal', label='accuracy')
+# plt.plot(hist.history['val_accuracy'], color='orange', label='val_accuracy')
+# fig.suptitle('Accuracy', fontsize=20)
+# plt.legend(loc="upper left")
+# plt.show()
+#
+# pre = Precision()
+# re = Recall()
+# acc = BinaryAccuracy()
+# for batch in test_data.as_numpy_iterator():
+#     X, y = batch
+#     yhat = model.predict(X)
+#     pre.update_state(y, yhat)
+#     re.update_state(y, yhat)
+#     acc.update_state(y, yhat)
+# print(pre.result(), re.result(), acc.result())
+#
+# img = cv2.imread('154006829.jpg')
+# plt.imshow(img)
+# plt.show()
+#
+# resize = tf.image.resize(img, (256,256))
+# plt.imshow(resize.numpy().astype(int))
+# plt.show()
+#
+# yhat = model.predict(np.expand_dims(resize/255, 0))
+#
+# if yhat > 0.5:
+#     print(f'Predicted class is Sad')
+# else:
+#     print(f'Predicted class is Happy')
+#
+#
+# model.save(os.path.join('models','imageclassifier.h5'))
+# new_model = load_model('imageclassifier.h5')
+# new_model.predict(np.expand_dims(resize/255, 0))
+#
+#
