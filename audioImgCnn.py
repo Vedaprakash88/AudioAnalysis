@@ -220,7 +220,7 @@ print(model.summary())
 logdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\log_dir\\"
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
 
-hist = model.fit(train_data, epochs=17, validation_data=val_data, callbacks=[tensorboard_callback])
+hist = model.fit(train_data, epochs=15, validation_data=val_data, callbacks=[tensorboard_callback])
 
 fig = plt.figure()
 plt.plot(hist.history['loss'], color='teal', label='loss')
@@ -228,43 +228,27 @@ plt.plot(hist.history['val_loss'], color='orange', label='val_loss')
 fig.suptitle('Loss', fontsize=20)
 plt.legend(loc="upper left")
 plt.show()
-#
-# fig = plt.figure()
-# plt.plot(hist.history['accuracy'], color='teal', label='accuracy')
-# plt.plot(hist.history['val_accuracy'], color='orange', label='val_accuracy')
-# fig.suptitle('Accuracy', fontsize=20)
-# plt.legend(loc="upper left")
-# plt.show()
-#
-# pre = Precision()
-# re = Recall()
-# acc = BinaryAccuracy()
-# for batch in test_data.as_numpy_iterator():
-#     X, y = batch
-#     yhat = model.predict(X)
-#     pre.update_state(y, yhat)
-#     re.update_state(y, yhat)
-#     acc.update_state(y, yhat)
-# print(pre.result(), re.result(), acc.result())
-#
-# img = cv2.imread('154006829.jpg')
-# plt.imshow(img)
-# plt.show()
-#
-# resize = tf.image.resize(img, (256,256))
-# plt.imshow(resize.numpy().astype(int))
-# plt.show()
-#
-# yhat = model.predict(np.expand_dims(resize/255, 0))
-#
-# if yhat > 0.5:
-#     print(f'Predicted class is Sad')
-# else:
-#     print(f'Predicted class is Happy')
-#
-#
-# model.save(os.path.join('models','imageclassifier.h5'))
+
+fig = plt.figure()
+plt.plot(hist.history['accuracy'], color='teal', label='accuracy')
+plt.plot(hist.history['val_accuracy'], color='orange', label='val_accuracy')
+fig.suptitle('Accuracy', fontsize=20)
+plt.legend(loc="upper left")
+plt.show()
+
+pre = Precision()
+re = Recall()
+acc = BinaryAccuracy()
+for batch in test_data.as_numpy_iterator():
+    X, y = batch
+    yhat = model.predict(X)
+    pre.update_state(y, yhat)
+    re.update_state(y, yhat)
+    acc.update_state(y, yhat)
+print(pre.result(), re.result(), acc.result())
+
+model.save(os.path.join('models', 'imageclassifier.h5'))
 # new_model = load_model('imageclassifier.h5')
 # new_model.predict(np.expand_dims(resize/255, 0))
-#
-#
+
+
