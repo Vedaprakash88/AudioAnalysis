@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-root = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\Data\\genres_original\\"
+root = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\genres_original\\"
 targetdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\Mel_spec\\"
 target_folders = os.listdir(root)
 root_folders = os.listdir(targetdir)
@@ -31,3 +31,6 @@ for path, subdirs, files in os.walk(root):
         plt.axis('off')
         plt.savefig(fig_name + "_Mel_Spec.JPEG", bbox_inches='tight', pad_inches=-0.1, dpi=1200)
         plt.close()
+
+print("Mel_Specrtrograms saved as images")
+

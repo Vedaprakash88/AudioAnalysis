@@ -7,17 +7,19 @@ import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.models import Sequential
-from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten, Dropout
-from tensorflow.python.keras.metrics import Precision, Recall, BinaryAccuracy
-from tensorflow.python.keras.models import load_model
+from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten
+from tensorflow.python.keras.metrics import SparseCategoricalAccuracy
+from tensorflow.python.keras.optimizer_v2 import adam
 import math
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
-
+print(gpus)
 # Removing images with incompatible extensions
-datadir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\Mel_spec\\"
+datadir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\MFCC"
+model_path = os.path.dirname(datadir)
+model_save = os.path.join(model_path, 'models', 'audio_classifier_MFCC_VCv1.h5')
 image_exts = ['jpeg', 'jpg', 'bmp', 'png']
 
 ''' Getting the list of classes of training dataset. These classes are the folder names i.e., all the images inside 
@@ -213,14 +215,37 @@ classifier: depends on number of classes i.e., 2 nodes for Binary and 2+ for mul
 
 '''
 model.add(Dense(10, activation='softmax'))
-
-model.compile('adam', loss=tf.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
+opt_adam = adam.Adam(learning_rate=0.0001)
+model.compile(optimizer=opt_adam, loss=tf.losses.SparseCategoricalCrossentropy(), metrics=['accuracy'])
 print(model.summary())
 
-logdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\log_dir\\"
-tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
+########################################################################################################################
+# Configuring Callbacks
+''' 
 
-hist = model.fit(train_data, epochs=15, validation_data=val_data, callbacks=[tensorboard_callback])
+A callback in keras helps us in a proper training of the model. From the framework point of view it is an object that
+we can pass to the model while using the fit method and can call it during different point of the training.
+
+'''
+
+logdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\log_dir\\"
+chk_pt = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\checkpoint\\"
+
+tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
+early_stop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.1, patience=5, mode='auto')
+checkpoint = tf.keras.callbacks.ModelCheckpoint(chk_pt, monitor='val_accuracy', save_best_only=True)
+callbacks = [tensorboard_callback, early_stop_callback, checkpoint]
+
+# End of checkpoint definition #########################################################################################
+
+########################################################################################################################
+
+# Fitting training data with model and validation data
+
+hist = model.fit(train_data, epochs=35, validation_data=val_data, callbacks=callbacks)
+# print(hist.history.keys())
+
+########################################################################################################################
 
 fig = plt.figure()
 plt.plot(hist.history['loss'], color='teal', label='loss')
@@ -236,19 +261,28 @@ fig.suptitle('Accuracy', fontsize=20)
 plt.legend(loc="upper left")
 plt.show()
 
-pre = Precision()
-re = Recall()
-acc = BinaryAccuracy()
+precision = []
+recall = []
+f1 = []
+acc = SparseCategoricalAccuracy()
 for batch in test_data.as_numpy_iterator():
     X, y = batch
     yhat = model.predict(X)
-    pre.update_state(y, yhat)
-    re.update_state(y, yhat)
+    # precision_l, recall_l, f1_l, _ = score(y, yhat)
+    # precision.append(precision_l)
+    # recall.append(recall_l)
+    # f1.append(f1_l)
     acc.update_state(y, yhat)
-print(pre.result(), re.result(), acc.result())
 
-model.save(os.path.join('models', 'imageclassifier.h5'))
-# new_model = load_model('imageclassifier.h5')
-# new_model.predict(np.expand_dims(resize/255, 0))
+# precision = sum(precision) / len(precision)
+# recall = sum(recall) / len(recall)
+# f1 = sum(f1) / len(f1)
+#
+# print('precision: {}'.format(precision))
+# print('recall: {}'.format(recall))
+# print('fscore: {}'.format(f1))
+print('Accuracy: {}'.format(acc.result()))
+
+model.save(model_save)
 
 
