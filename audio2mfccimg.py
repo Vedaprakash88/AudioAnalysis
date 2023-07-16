@@ -24,7 +24,7 @@ for path, subdirs, files in os.walk(root):
 
         # Visualizing MFCC
 
-        mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
+        mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
         fig, ax = plt.subplots(nrows=1, sharex=True)
         img = librosa.display.specshow(mfccs, x_axis='time')
         plt.axis('off')

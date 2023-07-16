@@ -11,14 +11,18 @@ from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten
 from tensorflow.python.keras.metrics import SparseCategoricalAccuracy
 from tensorflow.python.keras.optimizer_v2 import adam
 import math
+import easygui
+
+datadir = easygui.diropenbox(msg="Select folder with audio-images for training", title="Audio Classification")
+model_path = easygui.diropenbox(msg="Select folder to save trained model", title="Audio Classification")
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
 print(gpus)
 # Removing images with incompatible extensions
-datadir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\MFCC"
-model_path = os.path.dirname(datadir)
+# datadir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\MFCC"
+# model_path = os.path.dirname(datadir)
 model_save = os.path.join(model_path, 'models', 'audio_classifier_MFCC_VCv1.h5')
 image_exts = ['jpeg', 'jpg', 'bmp', 'png']
 
@@ -88,7 +92,7 @@ plt.show()
 # Pre-processing images is necessary to decrease training complexity (Generalization) and improve prediction results.
 # This is to reduce the image pixel values to between 0 and 1 instead of 0 and 255 (or max pixel number in the image)
 divisor = batch[0].max()
-data = data.map(lambda x, y: (x / divisor, y))  # x here is image pixel size and y is labeled
+data = data.map(lambda x, y: (x / divisor, y))  # x here is image pixel size and y is labelled
 ########################################################################################################################
 
 ########################################################################################################################
@@ -109,7 +113,7 @@ test_data = data.skip(train_length + validation_length).take(test_length)
 # CNN
 model = Sequential()
 
-model.add(Conv2D(16, (3,3), 1, activation='relu', input_shape=(256,256,3)))
+model.add(Conv2D(16, (3, 3), 1, activation='relu', input_shape=(256, 256, 3)))
 model.add(MaxPooling2D())
 
 model.add(Conv2D(32, (3, 3), 1, activation='relu'))
@@ -199,9 +203,11 @@ If you have a large excess of nodes, you network becomes a memory bank that can 
 (overfitting), but does not perform well on samples that was not part of the training set (underfitting)
 
 '''
-# based on my data I chose to go with 1 hidden layer with mean of input and output neurons, brought close to the
+# based on my data I chose to go with 1 hidden layer with mean of input and output neurons, brought close to the,
+# the model was overfitting/learning haphazardly, so i removed the hidden layer and accuracy reached to val_acc = 98%
+# and test_acc = 100%
 # bit value of input neurons
-model.add(Dense(128, activation='relu'))
+# model.add(Dense(128, activation='relu'))
 
 '''
 
@@ -232,9 +238,9 @@ logdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intel
 chk_pt = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\checkpoint\\"
 
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
-early_stop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.1, patience=5, mode='auto')
+# early_stop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.01, patience=7, mode='auto')
 checkpoint = tf.keras.callbacks.ModelCheckpoint(chk_pt, monitor='val_accuracy', save_best_only=True)
-callbacks = [tensorboard_callback, early_stop_callback, checkpoint]
+callbacks = [tensorboard_callback, checkpoint]
 
 # End of checkpoint definition #########################################################################################
 
@@ -242,7 +248,7 @@ callbacks = [tensorboard_callback, early_stop_callback, checkpoint]
 
 # Fitting training data with model and validation data
 
-hist = model.fit(train_data, epochs=35, validation_data=val_data, callbacks=callbacks)
+hist = model.fit(train_data, epochs=30, validation_data=val_data, callbacks=callbacks)
 # print(hist.history.keys())
 
 ########################################################################################################################
@@ -261,9 +267,9 @@ fig.suptitle('Accuracy', fontsize=20)
 plt.legend(loc="upper left")
 plt.show()
 
-precision = []
-recall = []
-f1 = []
+# precision = []
+# recall = []
+# f1 = []
 acc = SparseCategoricalAccuracy()
 for batch in test_data.as_numpy_iterator():
     X, y = batch
@@ -282,7 +288,6 @@ for batch in test_data.as_numpy_iterator():
 # print('recall: {}'.format(recall))
 # print('fscore: {}'.format(f1))
 print('Accuracy: {}'.format(acc.result()))
-
 model.save(model_save)
 
 

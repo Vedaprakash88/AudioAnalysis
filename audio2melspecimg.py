@@ -2,9 +2,12 @@ import librosa
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import easygui
 
-root = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\genres_original\\"
-targetdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\Mel_spec\\"
+root = easygui.diropenbox(msg="Select folder with audio files for image conversion", title="Audio Classification")
+targetdir = easygui.diropenbox(msg="Select folder to save audio-images", title="Audio Classification")
+# root = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\genres_original\\"
+# targetdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\Mel_spec\\"
 target_folders = os.listdir(root)
 root_folders = os.listdir(targetdir)
 target_folders.sort(reverse=False)
