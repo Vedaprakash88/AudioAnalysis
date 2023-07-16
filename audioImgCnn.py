@@ -15,6 +15,8 @@ import easygui
 
 datadir = easygui.diropenbox(msg="Select folder with audio-images for training", title="Audio Classification")
 model_path = easygui.diropenbox(msg="Select folder to save trained model", title="Audio Classification")
+logdir = easygui.diropenbox(msg="Select folder to save lo", title="Audio Classification")
+chk_pt = easygui.diropenbox(msg="Select folder to save checkpoints", title="Audio Classification")
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
@@ -233,9 +235,6 @@ A callback in keras helps us in a proper training of the model. From the framewo
 we can pass to the model while using the fit method and can call it during different point of the training.
 
 '''
-
-logdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\log_dir\\"
-chk_pt = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\checkpoint\\"
 
 tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
 # early_stop_callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.01, patience=7, mode='auto')
