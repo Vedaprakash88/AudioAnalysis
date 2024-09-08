@@ -1,101 +1,63 @@
 import librosa
-import matplotlib.pyplot as plt
 import numpy as np
 import os
+import multiprocessing
+from functools import partial
 from tqdm import tqdm
-from PIL import Image
-from io import BytesIO
 
+def process_audio_file(filename, targetdir):
+    try:
+        y, sr = librosa.load(filename)
+        path, name = os.path.split(filename)
+        target_folder = os.path.join(targetdir, os.path.basename(os.path.normpath(path)))
+        os.makedirs(target_folder, exist_ok=True)
+        base_name = os.path.join(target_folder, os.path.splitext(name)[0])
 
-root = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\genres_original"
-targetdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\Temp\\"
+        # Waveform
+        np.save(base_name + "_Waveform.npy", y)
 
-target_folders = os.listdir(root)
-root_folders = os.listdir(targetdir)
-target_folders.sort(reverse=False)
-root_folders.sort(reverse=False)
-img_dict = {}
+        # MFCC
+        mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
+        np.save(base_name + "_MFCC.npy", mfccs)
 
-if target_folders != root_folders:
-    folders_to_create = [x for x in target_folders if x not in root_folders]
-    for fldr in folders_to_create:
-        path = os.path.join(targetdir, fldr)
-        os.mkdir(path)
-total_files = sum([len(files) for r, d, files in os.walk(root)])
-batch = 100
-loop = 1
+        # Mel Spectrogram
+        mel_spec = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, fmax=8000)
+        mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
+        np.save(base_name + "_Mel_Spec.npy", mel_spec_db)
 
-def fig_to_image(fig):
-    buf = BytesIO()
-    fig.savefig(buf, format='JPEG', bbox_inches='tight', pad_inches=-0.1)
-    buf.seek(0)
-    img = Image.open(buf)
-    # img = img.convert('RGB') 
-    return img
+        # Spectrogram
+        D_highres = librosa.stft(y, hop_length=256, n_fft=4096)
+        S_db_hr = librosa.amplitude_to_db(np.abs(D_highres), ref=np.max)
+        np.save(base_name + "_Spec.npy", S_db_hr)
+    except Exception as e:
+        print(f'Error processing {filename}: {str(e)}')
 
+def process_audio_files_parallel(root, targetdir, num_processes=None):
+    if num_processes is None:
+        num_processes = multiprocessing.cpu_count()
 
-with tqdm(total=total_files, desc="Processing audio files") as pbar:
+    audio_files = []
     for pathi, subdirs, files in os.walk(root):
         for namei in files:
-            filename = os.path.join(pathi, namei)
-            yi, sri = librosa.load(filename)
-            img_dict.update({namei: {"y": yi,
-                                    "sr": sri,
-                                    "path": pathi}
-                            })
+            if namei.lower().endswith(('.wav', '.mp3', '.flac', '.ogg')):  # Add or remove audio formats as needed
+                audio_files.append(os.path.join(pathi, namei))
 
-    if len(img_dict) > 0:
-        for key in img_dict.keys():
-            y = img_dict.get(key, {}).get("y")
-            sr = img_dict.get(key, {}).get("sr")
-            path = img_dict.get(key, {}).get("path")
-            name = key
+    total_files = len(audio_files)
+    print(f"Found {total_files} audio files to process.")
 
+    process_func = partial(process_audio_file, targetdir=targetdir)
 
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        results = list(tqdm(pool.imap(process_func, audio_files), total=total_files, desc="Processing audio files"))
 
-            target_folder = os.path.join(targetdir, os.path.basename(os.path.normpath(path)))
-            fig_name = (os.path.join(target_folder, name[:len(name) - 4]))
+    successful = sum(1 for result in results if result is True)
+    failed = sum(1 for result in results if result is False)
+    print(f"Successfully processed {successful} files.")
+    print(f"Failed to process {failed} files.")
+    print(f"Total files processed: {successful + failed}")
+    print(f"Successfully processed {successful} out of {total_files} files.")
 
-
-            # waveform
-
-            fig, ax = plt.subplots()
-            librosa.display.waveshow(y, sr=sr, ax=ax)
-            ax.set_axis_off()
-            img = fig_to_image(fig)
-            img.save(fig_name + "_Wav.JPEG", "JPEG")
-            plt.close(fig)
-
-            # Visualizing MFCC
-
-            mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=40)
-            fig, ax = plt.subplots()
-            librosa.display.specshow(mfccs, x_axis='time', ax=ax)
-            ax.set_axis_off()
-            img = fig_to_image(fig)
-            img.save(fig_name + "_MFCC.JPEG", "JPEG")
-            plt.close(fig)
-
-            # Mel Spectrogram
-            S = librosa.feature.melspectrogram(y=y, sr=sr, n_mels=128, fmax=8000)
-            fig, ax = plt.subplots()
-            librosa.display.specshow(librosa.power_to_db(S, ref=np.max),
-                                        x_axis='time', y_axis='mel', fmax=8000, ax=ax)
-            ax.set_axis_off()
-            img = fig_to_image(fig)
-            img.save(fig_name + "_Mel_Spec.JPEG", "JPEG")
-            plt.close(fig)
-
-            # Spectrogram
-            D_highres = librosa.stft(y, hop_length=256, n_fft=4096)
-            S_db_hr = librosa.amplitude_to_db(np.abs(D_highres), ref=np.max)
-            fig, ax = plt.subplots()
-            librosa.display.specshow(S_db_hr, hop_length=256, x_axis='time', y_axis='log', ax=ax)
-            ax.set_axis_off()
-            img = fig_to_image(fig)
-            img.save(fig_name + "_Spec.JPEG", "JPEG")
-            plt.close(fig)
-
-            pbar.update(1)
-
-
+if __name__ == "__main__":
+    root = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\genres_original"
+    targetdir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\Temp\\"
+    process_audio_files_parallel(root, targetdir, num_processes=16)  # Using 16 threads
