@@ -1,8 +1,0 @@
-#!D:\10. SRH_Academia\1. All_Notes\2. Semester 2\3. Artificial Intelligence\Project\AudioAnalysis\venv\Scripts\python.exe
-# -*- coding: UTF-8 -*-
-from __future__ import print_function, division, absolute_import
-
-from numba.misc.numba_entry import main
-
-if __name__ == "__main__":
-    main()
