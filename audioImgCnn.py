@@ -9,6 +9,7 @@ from tensorflow.python.keras.layers import Conv2D, MaxPooling2D, Dense, Flatten
 from tensorflow.python.keras.metrics import SparseCategoricalAccuracy
 from tensorflow.python.keras.optimizer_v2 import adam
 import math
+import torch
 
 datadir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\Mel_spec\\"
 model_path = ("D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial "
@@ -27,6 +28,12 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 for gpu in gpus:
     tf.config.experimental.set_memory_growth(gpu, True)
 print(gpus)
+
+
+torch_gpu = torch.cuda.is_available()
+
+if torch_gpu:
+    print("GPU is available")
 # Removing images with incompatible extensions
 # datadir = "D:\\10. SRH_Academia\\1. All_Notes\\2. Semester 2\\3. Artificial Intelligence\\Project\\DATA\\MFCC"
 # model_path = os.path.dirname(datadir)
@@ -124,13 +131,13 @@ test_data = data.skip(train_length + validation_length).take(test_length)
 # CNN
 model = Sequential()
 
-model.add(Conv2D(16, (3, 3), 1, activation='relu', input_shape=(256, 256, 3), padding='same'))
+model.add(Conv2D(filters=16, kernel_size=(3, 3), strides=1, activation='relu', input_shape=(256, 256, 3), padding='same'))
 model.add(MaxPooling2D())
 
-model.add(Conv2D(32, (3, 3), 1, activation='relu'))
+model.add(Conv2D(filters=32, kernel_size=(3, 3), strides=1, activation='relu'))
 model.add(MaxPooling2D())
 
-model.add(Conv2D(16, (3, 3), 1, activation='relu'))
+model.add(Conv2D(filters=16, kernel_size=(3, 3), strides=1, activation='relu'))
 model.add(MaxPooling2D())
 
 model.add(Flatten())
@@ -256,7 +263,7 @@ callbacks = [tensorboard_callback, checkpoint]
 
 # Fitting training data with model and validation data
 
-hist = model.fit(train_data, epochs=10, validation_data=val_data, callbacks=callbacks)
+hist = model.fit(train_data, epochs=50, validation_data=val_data, callbacks=callbacks)
 # print(hist.history.keys())
 
 ########################################################################################################################
