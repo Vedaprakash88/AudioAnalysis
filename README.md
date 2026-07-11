@@ -1,4 +1,4 @@
-# Audio Analysis and Classification Pipeline
+# Audio Analysis and Classification Pipeline - Uni project 2022 (refrshed in 2026)
 
 A clean, modular, and fully Object-Oriented pipeline for audio processing, spectral image generation, and machine learning classification. The system integrates raw feature extraction, visual spectrogram generation, Convolutional Neural Networks (CNNs), and XGBoost/KNN feature classifiers into a unified in-process orchestrator.
 
