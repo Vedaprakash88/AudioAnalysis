@@ -21,7 +21,7 @@ dependencies = [
     "xgboost",
     "scikit-learn",
     "seaborn",
-    "tensorflow",
+    "tensorflow==2.10.0",
     "opencv-python==4.8.0.76",
     "tqdm"
 ]
