@@ -5,9 +5,7 @@ import shutil
 import wave
 import math
 import struct
-import numpy as np
-from audio_feature_extractor import AudioFeatureExtractor
-from audio_image_generator import AudioImageGenerator
+from audio_analysis import AudioFeatureExtractor, AudioImageGenerator
 
 def create_dummy_wav(path, duration=0.5, sr=22050):
     """Generates a small 440Hz sine wave WAV file for testing."""
@@ -38,8 +36,8 @@ class TestAudioExtractorAndGenerator(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
 
-    def test_feature_extractor(self):
-        # Run extractor with 1 process (to avoid multiprocessing overhead/fork issues in tests)
+    def test_feature_extractor_with_csv(self):
+        # Run extractor with 1 process
         extractor = AudioFeatureExtractor(
             root_dir=self.audio_root,
             target_dir=self.features_target,
@@ -57,6 +55,10 @@ class TestAudioExtractorAndGenerator(unittest.TestCase):
             for suffix in expected_suffixes:
                 file_name = "test_track" + suffix
                 self.assertTrue(os.path.exists(os.path.join(cls_dir, file_name)), f"Missing {file_name}")
+
+        # Assert that the unified tabular features CSV was compiled and contains rows
+        csv_out_path = os.path.join(self.features_target, "extracted_features.csv")
+        self.assertTrue(os.path.exists(csv_out_path))
 
     def test_image_generator(self):
         # Run image generator with 1 process

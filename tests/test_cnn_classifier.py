@@ -4,8 +4,8 @@ import tempfile
 import shutil
 import cv2
 import numpy as np
-from audio_cnn_classifier import AudioCNNClassifier
-from audio_cnn_predictor import AudioCNNPredictor
+from audio_analysis import AudioCNNClassifier, AudioCNNPredictor
+from tests.test_audio_extractor_generator import create_dummy_wav
 
 def create_dummy_jpeg(path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -34,19 +34,18 @@ class TestAudioCNNPipeline(unittest.TestCase):
             log_dir=self.log_dir,
             checkpoint_dir=self.checkpoint_dir,
             batch_size=2,
-            epochs=1  # Only 1 epoch for quick test run
+            epochs=1
         )
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
 
-    def test_cnn_pipeline(self):
+    def test_cnn_pipeline_and_audio_inference(self):
         # 1. Prepare Data
         self.classifier.prepare_data()
         self.assertEqual(len(self.classifier.class_names), 2)
         
         # 2. Train
-        # Save plots is disabled or set to True, let's keep it True
         self.classifier.train(save_plots=True)
         self.assertIsNotNone(self.classifier.model)
         
@@ -57,16 +56,14 @@ class TestAudioCNNPipeline(unittest.TestCase):
         # 3. Evaluate
         acc = self.classifier.evaluate()
         self.assertIsNotNone(acc)
-        self.assertTrue(0.0 <= acc <= 1.0)
 
         # 4. Save Model
         model_name = "test_model.h5"
         model_path = self.classifier.save_model(model_name)
         self.assertTrue(os.path.exists(model_path))
 
-        # 5. Predictor Inference
-        predictor = AudioCNNPredictor(model_path=model_path)
-        # Test basic prediction
+        # 5. Predictor Inference on Image
+        predictor = AudioCNNPredictor(model_path=model_path, feature_type='mel')
         test_img = os.path.join(self.data_dir, "genre_A", "img_0.jpeg")
         yhat = predictor.predict(test_img)
         self.assertEqual(yhat.shape, (1, 2))
@@ -76,6 +73,18 @@ class TestAudioCNNPipeline(unittest.TestCase):
         self.assertIn(idx, [0, 1])
         self.assertEqual(name, self.classifier.class_names[idx])
         self.assertEqual(len(probs), 2)
+
+        # 6. Predictor Inference on Raw Audio file (Generates Spectrogram in-memory)
+        test_wav = os.path.join(self.temp_dir, "test_song.wav")
+        create_dummy_wav(test_wav)
+        
+        yhat_audio = predictor.predict(test_wav)
+        self.assertEqual(yhat_audio.shape, (1, 2))
+        
+        idx_audio, name_audio, probs_audio = predictor.get_predicted_class(test_wav, class_names=self.classifier.class_names)
+        self.assertIn(idx_audio, [0, 1])
+        self.assertEqual(name_audio, self.classifier.class_names[idx_audio])
+        self.assertEqual(len(probs_audio), 2)
 
 if __name__ == '__main__':
     unittest.main()

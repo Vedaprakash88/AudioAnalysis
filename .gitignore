@@ -22,3 +22,9 @@ MFCCImages/
 Logs/
 Checkpoints/
 Models/
+
+# Packaging and Egg Info
+audio_analysis.egg-info/
+.eggs/
+build/
+dist/

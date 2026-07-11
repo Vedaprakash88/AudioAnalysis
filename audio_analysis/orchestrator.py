@@ -1,9 +1,9 @@
 import os
-from audio_feature_extractor import AudioFeatureExtractor
-from audio_image_generator import AudioImageGenerator
-from audio_cnn_classifier import AudioCNNClassifier
-from xgb_feature_classifier import XGBFeatureClassifier
-from knn_audio_classifier import KNNAudioClassifier
+from .audio_feature_extractor import AudioFeatureExtractor
+from .audio_image_generator import AudioImageGenerator
+from .audio_cnn_classifier import AudioCNNClassifier
+from .xgb_feature_classifier import XGBFeatureClassifier
+from .knn_audio_classifier import KNNAudioClassifier
 
 class AudioAnalysisOrchestrator:
     """
@@ -12,35 +12,17 @@ class AudioAnalysisOrchestrator:
     """
     def __init__(self, config):
         """
-        Initializes the orchestrator with a configuration dictionary of directory paths.
-        
-        Required/Optional keys in config:
-        - audio_root_dir: Folder containing subclass folders with audio files
-        - features_target_dir: Folder where raw numpy (.npy) features will be saved
-        - melspec_target_dir: Folder where Mel Spectrogram images will be saved
-        - mfcc_target_dir: Folder where MFCC images will be saved
-        - cnn_train_dir: Folder of images used for CNN training (e.g., melspec or mfcc target dir)
-        - cnn_model_dir: Folder to output the final trained CNN model
-        - cnn_log_dir: Folder for Tensorboard logs
-        - cnn_checkpoint_dir: Folder for training checkpoints
-        - cnn_batch_size: Batch size for CNN training (default: 10)
-        - cnn_epochs: Number of epochs for CNN training (default: 50)
-        - cnn_model_name: Filename of the saved CNN model (default: 'audio_classifier_model.h5')
-        - xgb_csv_path: Path to the feature CSV file (for XGBoost)
-        - xgb_plot_path: Path to save feature importance plot
-        - xgb_params: Dictionary of parameters for XGBClassifier
-        - knn_n_neighbors: Number of neighbors for KNN Iris classifier (default: 10)
-        - knn_plot_path: Path to save KNN confusion matrix plot
+        Initializes the orchestrator with a configuration dictionary of directory paths and parameters.
         """
         self.config = config
 
     def run_pipeline(self, 
-                     run_feature_extractor=True, 
-                     run_mel_gen=True, 
-                     run_mfcc_gen=True, 
-                     run_cnn=True, 
-                     run_xgb=False, 
-                     run_knn=False):
+                      run_feature_extractor=True, 
+                      run_mel_gen=True, 
+                      run_mfcc_gen=True, 
+                      run_cnn=True, 
+                      run_xgb=True, 
+                      run_knn=True):
         """
         Runs the specified segments of the machine learning pipeline in-process.
         """
@@ -48,9 +30,9 @@ class AudioAnalysisOrchestrator:
         print("🚀 AUDIO ANALYSIS PIPELINE ORCHESTRATOR STARTED")
         print("="*80 + "\n")
 
-        # Step 1: Raw Feature Extraction (.npy files)
+        # Step 1: Raw Feature Extraction & Tabular CSV compilation (.npy and .csv files)
         if run_feature_extractor:
-            print("--- STEP 1: EXTRACTING AUDIO FEATURES (.npy) ---")
+            print("--- STEP 1: EXTRACTING AUDIO FEATURES (.npy & .csv) ---")
             audio_root = self.config.get('audio_root_dir')
             features_target = self.config.get('features_target_dir')
             
@@ -59,7 +41,7 @@ class AudioAnalysisOrchestrator:
             else:
                 extractor = AudioFeatureExtractor(root_dir=audio_root, target_dir=features_target)
                 extractor.extract_all()
-                print("Completed raw feature extraction.\n")
+                print("Completed raw feature extraction and tabular compilation.\n")
 
         # Step 2: Generate Mel Spectrogram Images
         if run_mel_gen:
@@ -90,14 +72,24 @@ class AudioAnalysisOrchestrator:
         # Step 4: Train CNN Image Classifier
         if run_cnn:
             print("--- STEP 4: TRAINING CNN CLASSIFIER ---")
-            cnn_train_dir = self.config.get('cnn_train_dir')
+            feat_type = self.config.get('cnn_feature_type', 'mel').lower()
+            
+            # Map input directories dynamically based on feature selection
+            if feat_type == 'mfcc':
+                cnn_train_dir = self.config.get('mfcc_target_dir')
+            else:
+                cnn_train_dir = self.config.get('melspec_target_dir')
+                
             cnn_model_dir = self.config.get('cnn_model_dir')
             cnn_log_dir = self.config.get('cnn_log_dir')
             cnn_chk_pt_dir = self.config.get('cnn_checkpoint_dir')
 
             if not all([cnn_train_dir, cnn_model_dir, cnn_log_dir, cnn_chk_pt_dir]):
                 print("❌ Skipped Step 4: Missing CNN directory paths in config.")
+            elif not os.path.exists(cnn_train_dir) or not os.listdir(cnn_train_dir):
+                print(f"❌ Skipped Step 4: Training directory '{cnn_train_dir}' is empty or does not exist.")
             else:
+                print(f"CNN training configured to use: {feat_type.upper()} images from {cnn_train_dir}")
                 classifier = AudioCNNClassifier(
                     data_dir=cnn_train_dir,
                     model_dir=cnn_model_dir,
@@ -119,8 +111,8 @@ class AudioAnalysisOrchestrator:
             print("--- STEP 5: TRAINING XGBOOST FEATURE CLASSIFIER ---")
             xgb_csv = self.config.get('xgb_csv_path')
             
-            if not xgb_csv:
-                print("❌ Skipped Step 5: Missing 'xgb_csv_path' in config.")
+            if not xgb_csv or not os.path.exists(xgb_csv):
+                print(f"❌ Skipped Step 5: Tabular feature CSV not found at '{xgb_csv}'. Run Step 1 first.")
             else:
                 xgb_clf = XGBFeatureClassifier(
                     csv_path=xgb_csv,
@@ -137,8 +129,9 @@ class AudioAnalysisOrchestrator:
         if run_knn:
             print("--- STEP 6: TRAINING KNN AUDIO CLASSIFIER ---")
             xgb_csv = self.config.get('xgb_csv_path')
-            if not xgb_csv:
-                print("❌ Skipped Step 6: Missing 'xgb_csv_path' in config.")
+            
+            if not xgb_csv or not os.path.exists(xgb_csv):
+                print(f"❌ Skipped Step 6: Tabular feature CSV not found at '{xgb_csv}'. Run Step 1 first.")
             else:
                 knn_plot = self.config.get('knn_plot_path', 'knn_confusion_matrix.png')
                 knn_clf = KNNAudioClassifier(
@@ -152,44 +145,3 @@ class AudioAnalysisOrchestrator:
         print("="*80)
         print("🎉 ALL REQUESTED STEPS IN THE PIPELINE COMPLETED SUCCESSFULLY!")
         print("="*80 + "\n")
-
-
-if __name__ == "__main__":
-    import easygui
-
-    print("🚀 NATIVE PIPELINE TEST RUNNER")
-    
-    audio_dir = easygui.diropenbox(msg="Select root folder containing audio subfolders", title="Select Input Audio")
-    if not audio_dir:
-        print("Cancelled.")
-        exit(0)
-
-    # Ask for target directory to output logs/features/models under
-    base_target = easygui.diropenbox(msg="Select main output target directory", title="Select Output Location")
-    if not base_target:
-        base_target = os.path.dirname(audio_dir)
-
-    # Establish default subdirectories
-    config = {
-        'audio_root_dir': audio_dir,
-        'features_target_dir': os.path.join(base_target, 'ExtractedFeatures'),
-        'melspec_target_dir': os.path.join(base_target, 'MelSpectrogramImages'),
-        'mfcc_target_dir': os.path.join(base_target, 'MFCCImages'),
-        'cnn_train_dir': os.path.join(base_target, 'MelSpectrogramImages'), # Train on Mel Specs by default
-        'cnn_model_dir': os.path.join(base_target, 'Models'),
-        'cnn_log_dir': os.path.join(base_target, 'Logs'),
-        'cnn_checkpoint_dir': os.path.join(base_target, 'Checkpoints'),
-        'cnn_batch_size': 10,
-        'cnn_epochs': 5, # Low epoch for default test
-        'cnn_model_name': 'audio_classifier_Mel_spec_VCv1.h5',
-    }
-
-    orchestrator = AudioAnalysisOrchestrator(config)
-    orchestrator.run_pipeline(
-        run_feature_extractor=True,
-        run_mel_gen=True,
-        run_mfcc_gen=True,
-        run_cnn=True,
-        run_xgb=False, # XGB needs tabular CSV
-        run_knn=False
-    )

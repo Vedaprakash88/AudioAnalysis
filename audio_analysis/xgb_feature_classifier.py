@@ -52,7 +52,13 @@ class XGBFeatureClassifier:
 
         # Separate filename, features, and label
         self.file_names = data['filename']
-        features = data.drop(['filename', 'label'], axis=1)
+        # Also drop PCA columns if they are present in the CSV
+        cols_to_drop = ['filename', 'label']
+        for pca_col in ['principal component 1', 'principal component 2']:
+            if pca_col in data.columns:
+                cols_to_drop.append(pca_col)
+                
+        features = data.drop(cols_to_drop, axis=1)
 
         # Standardize features
         standardized_features = self.scaler.fit_transform(features)

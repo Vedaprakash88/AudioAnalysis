@@ -4,7 +4,7 @@ import tempfile
 import shutil
 import pandas as pd
 import numpy as np
-from xgb_feature_classifier import XGBFeatureClassifier
+from audio_analysis import XGBFeatureClassifier
 
 class TestXGBFeatureClassifier(unittest.TestCase):
     def setUp(self):
@@ -52,7 +52,7 @@ class TestXGBFeatureClassifier(unittest.TestCase):
         self.clf.train(verbose=False)
         self.assertIsNotNone(self.clf.model)
         
-        # 3. Evaluate with 10-fold cross-validation (works now that class has 25 members)
+        # 3. Evaluate with 10-fold cross-validation
         results = self.clf.evaluate(run_cv=True)
         self.assertIn('accuracy', results)
         self.assertIn('cv_accuracy_mean', results)

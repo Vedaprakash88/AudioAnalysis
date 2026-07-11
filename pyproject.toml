@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "audio_analysis"
+version = "0.1.0"
+description = "A modular Object-Oriented pipeline for audio classification and analysis"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "easygui",
+    "librosa",
+    "numpy==1.23.5",
+    "matplotlib",
+    "pandas",
+    "xgboost",
+    "scikit-learn",
+    "seaborn",
+    "tensorflow",
+    "opencv-python==4.8.0.76",
+    "tqdm"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["audio_analysis*"]
