@@ -24,7 +24,7 @@ A clean, modular, and fully Object-Oriented pipeline for audio processing, spect
 ├── audio_cnn_classifier.py     # AudioCNNClassifier class (Data pipeline, CNN training, and metrics)
 ├── audio_cnn_predictor.py      # AudioCNNPredictor class (Inference on spectrogram images)
 ├── xgb_feature_classifier.py   # XGBFeatureClassifier class (XGBoost training, CV, and plot importance)
-├── knn_iris_classifier.py      # KNNIrisClassifier class (KNN baseline classification)
+├── knn_audio_classifier.py     # KNNAudioClassifier class (KNN classification on audio features)
 └── requirements.txt            # System dependencies
 ```
 
@@ -65,3 +65,40 @@ Run the main script to start the interactive orchestrator:
 python main.py
 ```
 A series of GUI dialogs will guide you to select your audio dataset folder, output workspace folder, and optional tabular CSV logs.
+
+---
+
+# Problem
+
+Accuracy: 0.92
+confusion_matrix:
+ [[187   1   8   0   0   4   0   0   3   5]
+ [  0 199   0   0   0   3   0   0   1   0]
+ [  9   0 165   2   0   5   0   1   2   2]
+ [  1   2   2 182   2   1   2   3   2   2]
+ [  2   1   5   4 196   1   2   2   3   2]
+ [  0   6   6   1   0 179   0   0   0   0]
+ [  1   0   1   0   1   0 198   0   0   3]
+ [  0   0   0   0   1   0   0 175   2   2]
+ [  1   1   8   5   2   1   0   2 190   1]
+ [  5   1   8   3   3   3   7   0   2 165]]
+classification_report: 
+               precision    recall  f1-score   support
+
+           0       0.91      0.90      0.90       208
+           1       0.94      0.98      0.96       203
+           2       0.81      0.89      0.85       186
+           3       0.92      0.91      0.92       199
+           4       0.96      0.90      0.93       218
+           5       0.91      0.93      0.92       192
+           6       0.95      0.97      0.96       204
+           7       0.96      0.97      0.96       180
+           8       0.93      0.90      0.91       211
+           9       0.91      0.84      0.87       197
+
+    accuracy                           0.92      1998
+   macro avg       0.92      0.92      0.92      1998
+weighted avg       0.92      0.92      0.92      1998
+
+Cross-validated accuracy: 0.66 ± 0.07
+Accuracy via score method: 0.92
