@@ -1,1 +1,24 @@
 venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Generated model files and outputs
+*.h5
+*.npy
+*.csv
+*.png
+*.jpg
+*.jpeg
+*.JPEG
+*.PNG
+
+# Folder outputs from runs
+ExtractedFeatures/
+MelSpectrogramImages/
+MFCCImages/
+Logs/
+Checkpoints/
+Models/

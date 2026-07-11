@@ -1,0 +1,11 @@
+easygui
+librosa
+numpy
+matplotlib
+pandas
+xgboost
+scikit-learn
+seaborn
+tensorflow
+opencv-python
+tqdm
