@@ -6,30 +6,10 @@ import multiprocessing
 from functools import partial
 from tqdm import tqdm
 
-def _warmup_worker(filename, target_dir):
-    """Triggers JIT compilation of all features on a tiny audio slice."""
-    try:
-        y, sr = librosa.load(filename, duration=0.1)
-        D = librosa.stft(y)
-        S = np.abs(D)
-        librosa.feature.chroma_stft(S=S**2, sr=sr)
-        librosa.feature.rms(S=S)
-        librosa.feature.spectral_centroid(S=S, sr=sr)
-        librosa.feature.spectral_bandwidth(S=S, sr=sr)
-        librosa.feature.spectral_rolloff(S=S, sr=sr)
-        librosa.feature.zero_crossing_rate(y)
-        librosa.decompose.hpss(S)
-        onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-        librosa.feature.tempo(onset_envelope=onset_env, sr=sr)
-    except Exception:
-        pass
-    return True
-
-def _process_audio_file_worker(filename, target_dir):
+def _extract_raw_arrays_worker(filename, target_dir):
     """
-    Module-level worker function for parallel processing.
-    Extracts raw numpy features and computes 58 DSP features for tabular classification.
-    Optimized to reuse precomputed spectrogram matrices and run frequency-domain operations.
+    Worker to load raw audio and save the base representations (.npy files).
+    Saves Waveform, Mel Spec, MFCC, and high-resolution STFT spectrogram.
     """
     try:
         # Load audio (mono, 22050Hz)
@@ -43,62 +23,87 @@ def _process_audio_file_worker(filename, target_dir):
         # 1. Waveform
         np.save(base_name + "_Waveform.npy", y)
 
-        # 2. Precompute STFT (default n_fft=2048, hop_length=512) to reuse for spectral features
+        # 2. Precompute STFT once for Mel and MFCC
         D = librosa.stft(y)
         S = np.abs(D)
         S_power = S**2
 
-        # 3. Mel Spectrogram (using power spectrogram directly)
+        # 3. Mel Spectrogram
         mel_spec = librosa.feature.melspectrogram(S=S_power, sr=sr, n_mels=128, fmax=8000)
         mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
         np.save(base_name + "_Mel_Spec.npy", mel_spec_db)
 
-        # 4. MFCC (40 coefficients computed from the Mel Spectrogram - fast!)
+        # 4. MFCC (40 coefficients)
         mfccs = librosa.feature.mfcc(S=mel_spec_db, n_mfcc=40)
         np.save(base_name + "_MFCC.npy", mfccs)
 
-        # 5. Spectrogram (STFT high-res, computed only once for saving)
+        # 5. Spectrogram (STFT high-res, 4096 bins, hop size 256)
         D_highres = librosa.stft(y, hop_length=256, n_fft=4096)
         S_db_hr = librosa.amplitude_to_db(np.abs(D_highres), ref=np.max)
         np.save(base_name + "_Spec.npy", S_db_hr)
 
-        # 6. Extract Tabular DSP Features
+        return True
+    except Exception as e:
+        print(f"Error extracting raw arrays for {filename}: {str(e)}")
+        return False
+
+def _extract_tabular_features_worker(filename, target_dir):
+    """
+    Worker to load pre-extracted numpy arrays and compute tabular properties.
+    Extremely fast because it loads binary arrays instead of reloading/decoding audio files.
+    """
+    try:
+        path, name = os.path.split(filename)
+        subfolder = os.path.basename(os.path.normpath(path))
+        target_folder = os.path.join(target_dir, subfolder)
+        base_name = os.path.join(target_folder, os.path.splitext(name)[0])
+
+        # Load pre-saved numpy arrays
+        y = np.load(base_name + "_Waveform.npy")
+        mel_spec_db = np.load(base_name + "_Mel_Spec.npy")
+        mfccs = np.load(base_name + "_MFCC.npy")
+
+        sr = 22050
+        D = librosa.stft(y)
+        S = np.abs(D)
+        S_power = S**2
+
         feat_dict = {
             'filename': name,
             'length': len(y)
         }
 
-        # Chroma STFT (using power spectrogram)
+        # Chroma STFT
         chroma = librosa.feature.chroma_stft(S=S_power, sr=sr)
         feat_dict['chroma_stft_mean'] = float(np.mean(chroma))
         feat_dict['chroma_stft_var'] = float(np.var(chroma))
 
-        # RMS (using magnitude spectrogram)
+        # RMS
         rms = librosa.feature.rms(S=S)
         feat_dict['rms_mean'] = float(np.mean(rms))
         feat_dict['rms_var'] = float(np.var(rms))
 
-        # Spectral Centroid (using magnitude spectrogram)
+        # Spectral Centroid
         spec_cent = librosa.feature.spectral_centroid(S=S, sr=sr)
         feat_dict['spectral_centroid_mean'] = float(np.mean(spec_cent))
         feat_dict['spectral_centroid_var'] = float(np.var(spec_cent))
 
-        # Spectral Bandwidth (using magnitude spectrogram)
+        # Spectral Bandwidth
         spec_bw = librosa.feature.spectral_bandwidth(S=S, sr=sr)
         feat_dict['spectral_bandwidth_mean'] = float(np.mean(spec_bw))
         feat_dict['spectral_bandwidth_var'] = float(np.var(spec_bw))
 
-        # Rolloff (using magnitude spectrogram)
+        # Rolloff
         rolloff = librosa.feature.spectral_rolloff(S=S, sr=sr)
         feat_dict['rolloff_mean'] = float(np.mean(rolloff))
         feat_dict['rolloff_var'] = float(np.var(rolloff))
 
-        # Zero Crossing Rate (runs in milliseconds on time domain)
+        # Zero Crossing Rate
         zcr = librosa.feature.zero_crossing_rate(y)
         feat_dict['zero_crossing_rate_mean'] = float(np.mean(zcr))
         feat_dict['zero_crossing_rate_var'] = float(np.var(zcr))
 
-        # Frequency-domain HPSS (15x speedup compared to time-domain hpss)
+        # Freq-domain HPSS
         harmonic_mag, percussive_mag = librosa.decompose.hpss(S)
         feat_dict['harmony_mean'] = float(np.mean(harmonic_mag))
         feat_dict['harmony_var'] = float(np.var(harmonic_mag))
@@ -106,6 +111,7 @@ def _process_audio_file_worker(filename, target_dir):
         feat_dict['perceptr_var'] = float(np.var(percussive_mag))
 
         # Optimized Tempo
+        # Re-use mel_spec_db to extract tempo strength envelope for speed
         onset_env = librosa.onset.onset_strength(y=y, sr=sr)
         tempo = librosa.feature.tempo(onset_envelope=onset_env, sr=sr)
         if isinstance(tempo, np.ndarray):
@@ -113,7 +119,7 @@ def _process_audio_file_worker(filename, target_dir):
         else:
             feat_dict['tempo'] = float(tempo)
 
-        # 20 MFCC stats (taking first 20 coefficients of our 40-MFCC calculation)
+        # 20 MFCC stats
         for i in range(20):
             feat_dict[f'mfcc{i+1}_mean'] = float(np.mean(mfccs[i]))
             feat_dict[f'mfcc{i+1}_var'] = float(np.var(mfccs[i]))
@@ -121,7 +127,7 @@ def _process_audio_file_worker(filename, target_dir):
         feat_dict['label'] = subfolder
         return feat_dict
     except Exception as e:
-        print(f"Error processing {filename}: {str(e)}")
+        print(f"Error extracting tabular features for {filename}: {str(e)}")
         return None
 
 class AudioFeatureExtractor:
@@ -147,21 +153,30 @@ class AudioFeatureExtractor:
 
         os.makedirs(self.target_dir, exist_ok=True)
 
-        # 1. JIT Compilation Warm-Up Phase
-        print(f"Initializing process pool and warming up JIT compilers ({self.num_processes} workers)...")
-        warmup_func = partial(_warmup_worker, target_dir=self.target_dir)
+        # 1. Step 1: Extract raw representation arrays (.npy)
+        print("\n--- Step 1/2: Extracting raw representation arrays (.npy) ---")
+        raw_func = partial(_extract_raw_arrays_worker, target_dir=self.target_dir)
         with multiprocessing.Pool(processes=self.num_processes) as pool:
-            # Map a fast 0.1s slice task to all workers to warm them up
-            pool.map(warmup_func, [audio_files[0]] * self.num_processes)
-        print("Warm up complete. Processing dataset...")
+            raw_results = list(tqdm(pool.imap_unordered(raw_func, audio_files),
+                                    total=len(audio_files),
+                                    desc="Extracting .npy files"))
+        
+        successful_raw = sum(raw_results)
+        print(f"Completed raw extraction: {successful_raw} succeeded, {len(audio_files) - successful_raw} failed.")
 
-        # 2. Main Extraction Run
-        process_func = partial(_process_audio_file_worker, target_dir=self.target_dir)
+        # Filter audio files to only successfully extracted ones for tabular pass
+        valid_files = [audio_files[i] for i, success in enumerate(raw_results) if success]
+
+        # 2. Step 2: Compute tabular stats
+        print("\n--- Step 2/2: Computing tabular stats for CSV compilation ---")
+        tab_func = partial(_extract_tabular_features_worker, target_dir=self.target_dir)
         with multiprocessing.Pool(processes=self.num_processes) as pool:
-            results = list(tqdm(pool.imap(process_func, audio_files), total=len(audio_files), desc="Extracting features"))
+            tab_results = list(tqdm(pool.imap(tab_func, valid_files),
+                                    total=len(valid_files),
+                                    desc="Compiling tabular features"))
 
         # Filter out failed runs
-        valid_features = [res for res in results if res is not None]
+        valid_features = [res for res in tab_results if res is not None]
 
         # Compile features into tabular CSV
         if valid_features:
@@ -172,6 +187,7 @@ class AudioFeatureExtractor:
 
         successful = len(valid_features)
         failed = len(audio_files) - successful
-        print(f"\nSuccessfully processed {successful} files.")
-        print(f"Failed to process {failed} files.")
-        print(f"Total files processed: {successful + failed} / {len(audio_files)}")
+        print(f"\nSummary:")
+        print(f"  Successfully processed: {successful} files")
+        print(f"  Failed: {failed} files")
+        print(f"  Total: {successful + failed} / {len(audio_files)}")
