@@ -110,6 +110,26 @@ print(f"Predicted Class: {class_name} (Probabilities: {probabilities})")
 
 ---
 
+### 3. Running Unit Tests
+The repository includes a comprehensive unit test suite to verify configuration parsing, visual generation, classification, and in-memory prediction:
+
+Run all tests via the test runner script:
+```bash
+python run_tests.py
+```
+Or directly using Python's unittest module:
+```bash
+python -m unittest discover -s tests
+```
+
+* **`tests/test_config.py`**: Validates configuration `.ini` loading, defaults, and overrides.
+* **`tests/test_audio_extractor_generator.py`**: Verifies waveform saving, Mel/MFCC spectrogram rendering, and tabular feature CSV compilation.
+* **`tests/test_cnn_classifier.py`**: Checks CNN data loading, model training, evaluation, and dynamic in-memory prediction from raw audio files.
+* **`tests/test_xgb_classifier.py`**: Asserts XGBoost classifier training, metric scoring, and cross-validation.
+* **`tests/test_knn_classifier.py`**: Tests KNN training, matrix calculations, and evaluation.
+
+---
+
 ## 📁 Repository Structure
 
 ```text
