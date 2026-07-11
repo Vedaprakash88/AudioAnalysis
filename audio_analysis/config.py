@@ -8,6 +8,9 @@ def load_config(config_path=None):
     if config_path is None:
         # Resolve config.ini relative to this package installation or workspace root
         possible_paths = [
+            "config.local.ini",
+            os.path.join(os.getcwd(), "config.local.ini"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config.local.ini"),
             "config.ini",
             os.path.join(os.getcwd(), "config.ini"),
             os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "config.ini")
