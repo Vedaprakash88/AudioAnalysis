@@ -156,21 +156,21 @@ class AudioFeatureExtractor:
         # 1. Step 1: Extract raw representation arrays (.npy)
         print("\n--- Step 1/2: Extracting raw representation arrays (.npy) ---")
         raw_func = partial(_extract_raw_arrays_worker, target_dir=self.target_dir)
+        tab_func = partial(_extract_tabular_features_worker, target_dir=self.target_dir)
+        
         with multiprocessing.Pool(processes=self.num_processes) as pool:
             raw_results = list(tqdm(pool.imap_unordered(raw_func, audio_files),
                                     total=len(audio_files),
                                     desc="Extracting .npy files"))
-        
-        successful_raw = sum(raw_results)
-        print(f"Completed raw extraction: {successful_raw} succeeded, {len(audio_files) - successful_raw} failed.")
+            
+            successful_raw = sum(raw_results)
+            print(f"Completed raw extraction: {successful_raw} succeeded, {len(audio_files) - successful_raw} failed.")
 
-        # Filter audio files to only successfully extracted ones for tabular pass
-        valid_files = [audio_files[i] for i, success in enumerate(raw_results) if success]
+            # Filter audio files to only successfully extracted ones for tabular pass
+            valid_files = [audio_files[i] for i, success in enumerate(raw_results) if success]
 
-        # 2. Step 2: Compute tabular stats
-        print("\n--- Step 2/2: Computing tabular stats for CSV compilation ---")
-        tab_func = partial(_extract_tabular_features_worker, target_dir=self.target_dir)
-        with multiprocessing.Pool(processes=self.num_processes) as pool:
+            # 2. Step 2: Compute tabular stats
+            print("\n--- Step 2/2: Computing tabular stats for CSV compilation ---")
             tab_results = list(tqdm(pool.imap(tab_func, valid_files),
                                     total=len(valid_files),
                                     desc="Compiling tabular features"))
