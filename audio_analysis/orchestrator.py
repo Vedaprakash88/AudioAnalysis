@@ -30,9 +30,9 @@ class AudioAnalysisOrchestrator:
         print("🚀 AUDIO ANALYSIS PIPELINE ORCHESTRATOR STARTED")
         print("="*80 + "\n")
 
-        # Step 1: Raw Feature Extraction & Tabular CSV compilation (.npy and .csv files)
+        # Step 1: Tabular CSV compilation directly from audio files
         if run_feature_extractor:
-            print("--- STEP 1: EXTRACTING AUDIO FEATURES (.npy & .csv) ---")
+            print("--- STEP 1: EXTRACTING TABULAR AUDIO FEATURES (.csv) ---")
             audio_root = self.config.get('audio_root_dir')
             features_target = self.config.get('features_target_dir')
             
@@ -41,7 +41,7 @@ class AudioAnalysisOrchestrator:
             else:
                 extractor = AudioFeatureExtractor(root_dir=audio_root, target_dir=features_target)
                 extractor.extract_all()
-                print("Completed raw feature extraction and tabular compilation.\n")
+                print("Completed tabular feature extraction and compilation.\n")
 
         # Step 2: Generate Mel Spectrogram Images
         if run_mel_gen:

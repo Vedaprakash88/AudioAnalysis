@@ -6,67 +6,28 @@ import multiprocessing
 from functools import partial
 from tqdm import tqdm
 
-def _extract_raw_arrays_worker(filename, target_dir):
+def _extract_tabular_features_direct_worker(filename):
     """
-    Worker to load raw audio and save the base representations (.npy files).
-    Saves Waveform, Mel Spec, MFCC, and high-resolution STFT spectrogram.
+    Worker to load raw audio and extract tabular features directly using librosa.
+    Bypasses saving/loading intermediate .npy files to disk.
     """
     try:
         # Load audio (mono, 22050Hz)
         y, sr = librosa.load(filename, sr=22050)
         path, name = os.path.split(filename)
         subfolder = os.path.basename(os.path.normpath(path))
-        target_folder = os.path.join(target_dir, subfolder)
-        os.makedirs(target_folder, exist_ok=True)
-        base_name = os.path.join(target_folder, os.path.splitext(name)[0])
 
-        # 1. Waveform
-        np.save(base_name + "_Waveform.npy", y)
-
-        # 2. Precompute STFT once for Mel and MFCC
+        # Precompute STFT
         D = librosa.stft(y)
         S = np.abs(D)
         S_power = S**2
 
-        # 3. Mel Spectrogram
+        # Mel Spectrogram
         mel_spec = librosa.feature.melspectrogram(S=S_power, sr=sr, n_mels=128, fmax=8000)
         mel_spec_db = librosa.power_to_db(mel_spec, ref=np.max)
-        np.save(base_name + "_Mel_Spec.npy", mel_spec_db)
 
-        # 4. MFCC (40 coefficients)
+        # MFCC (40 coefficients)
         mfccs = librosa.feature.mfcc(S=mel_spec_db, n_mfcc=40)
-        np.save(base_name + "_MFCC.npy", mfccs)
-
-        # 5. Spectrogram (STFT high-res, 4096 bins, hop size 256)
-        D_highres = librosa.stft(y, hop_length=256, n_fft=4096)
-        S_db_hr = librosa.amplitude_to_db(np.abs(D_highres), ref=np.max)
-        np.save(base_name + "_Spec.npy", S_db_hr)
-
-        return True
-    except Exception as e:
-        print(f"Error extracting raw arrays for {filename}: {str(e)}")
-        return False
-
-def _extract_tabular_features_worker(filename, target_dir):
-    """
-    Worker to load pre-extracted numpy arrays and compute tabular properties.
-    Extremely fast because it loads binary arrays instead of reloading/decoding audio files.
-    """
-    try:
-        path, name = os.path.split(filename)
-        subfolder = os.path.basename(os.path.normpath(path))
-        target_folder = os.path.join(target_dir, subfolder)
-        base_name = os.path.join(target_folder, os.path.splitext(name)[0])
-
-        # Load pre-saved numpy arrays
-        y = np.load(base_name + "_Waveform.npy")
-        mel_spec_db = np.load(base_name + "_Mel_Spec.npy")
-        mfccs = np.load(base_name + "_MFCC.npy")
-
-        sr = 22050
-        D = librosa.stft(y)
-        S = np.abs(D)
-        S_power = S**2
 
         feat_dict = {
             'filename': name,
@@ -132,8 +93,8 @@ def _extract_tabular_features_worker(filename, target_dir):
 
 class AudioFeatureExtractor:
     """
-    Extracts raw numpy features and aggregates tabular DSP properties
-    across all files in a root directory, saving them in a unified CSV.
+    Extracts raw features and aggregates tabular DSP properties
+    across all files in a root directory directly, saving them in a unified CSV.
     """
     def __init__(self, root_dir, target_dir, num_processes=None):
         self.root_dir = root_dir
@@ -153,26 +114,11 @@ class AudioFeatureExtractor:
 
         os.makedirs(self.target_dir, exist_ok=True)
 
-        # 1. Step 1: Extract raw representation arrays (.npy)
-        print("\n--- Step 1/2: Extracting raw representation arrays (.npy) ---")
-        raw_func = partial(_extract_raw_arrays_worker, target_dir=self.target_dir)
-        tab_func = partial(_extract_tabular_features_worker, target_dir=self.target_dir)
+        print("\n--- Extracting tabular features directly from audio files ---")
         
         with multiprocessing.Pool(processes=self.num_processes) as pool:
-            raw_results = list(tqdm(pool.imap_unordered(raw_func, audio_files),
+            tab_results = list(tqdm(pool.imap(_extract_tabular_features_direct_worker, audio_files),
                                     total=len(audio_files),
-                                    desc="Extracting .npy files"))
-            
-            successful_raw = sum(raw_results)
-            print(f"Completed raw extraction: {successful_raw} succeeded, {len(audio_files) - successful_raw} failed.")
-
-            # Filter audio files to only successfully extracted ones for tabular pass
-            valid_files = [audio_files[i] for i, success in enumerate(raw_results) if success]
-
-            # 2. Step 2: Compute tabular stats
-            print("\n--- Step 2/2: Computing tabular stats for CSV compilation ---")
-            tab_results = list(tqdm(pool.imap(tab_func, valid_files),
-                                    total=len(valid_files),
                                     desc="Compiling tabular features"))
 
         # Filter out failed runs

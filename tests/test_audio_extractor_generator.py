@@ -45,17 +45,6 @@ class TestAudioExtractorAndGenerator(unittest.TestCase):
         )
         extractor.extract_all()
 
-        # Check that target folders and npy files were created for both classes
-        for cls in self.classes:
-            cls_dir = os.path.join(self.features_target, cls)
-            self.assertTrue(os.path.exists(cls_dir))
-            
-            # Check for Waveform, MFCC, Mel Spec, and Spec npy files
-            expected_suffixes = ["_Waveform.npy", "_MFCC.npy", "_Mel_Spec.npy", "_Spec.npy"]
-            for suffix in expected_suffixes:
-                file_name = "test_track" + suffix
-                self.assertTrue(os.path.exists(os.path.join(cls_dir, file_name)), f"Missing {file_name}")
-
         # Assert that the unified tabular features CSV was compiled and contains rows
         csv_out_path = os.path.join(self.features_target, "extracted_features.csv")
         self.assertTrue(os.path.exists(csv_out_path))
