@@ -4,7 +4,7 @@ import tempfile
 import shutil
 import pandas as pd
 import numpy as np
-from audio_analysis import XGBFeatureClassifier
+from audio_classifier import XGBFeatureClassifier
 
 class TestXGBFeatureClassifier(unittest.TestCase):
     def setUp(self):

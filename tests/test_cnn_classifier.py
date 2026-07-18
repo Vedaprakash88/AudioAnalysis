@@ -4,7 +4,7 @@ import tempfile
 import shutil
 import cv2
 import numpy as np
-from audio_analysis import AudioCNNClassifier, AudioCNNPredictor
+from audio_classifier import AudioCNNClassifier, AudioCNNPredictor
 from tests.test_audio_extractor_generator import create_dummy_wav
 
 def create_dummy_jpeg(path):

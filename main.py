@@ -1,6 +1,6 @@
 import os
 import easygui
-from audio_analysis import load_config, AudioAnalysisOrchestrator
+from audio_classifier import load_config, AudioAnalysisOrchestrator
 
 def main():
     print("="*80)

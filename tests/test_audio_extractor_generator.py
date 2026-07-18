@@ -5,7 +5,7 @@ import shutil
 import wave
 import math
 import struct
-from audio_analysis import AudioFeatureExtractor, AudioImageGenerator
+from audio_classifier import AudioFeatureExtractor, AudioImageGenerator
 
 def create_dummy_wav(path, duration=0.5, sr=22050):
     """Generates a small 440Hz sine wave WAV file for testing."""

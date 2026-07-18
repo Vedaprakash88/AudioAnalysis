@@ -13,20 +13,20 @@ if script_dir:
 
 # Check, install requirements, and import
 try:
-    from audio_analysis import load_config, AudioAnalysisOrchestrator, AudioCNNPredictor
+    from audio_classifier import load_config, AudioAnalysisOrchestrator, AudioCNNPredictor
 except (ImportError, ModuleNotFoundError) as e:
-    print(f"Missing dependencies or audio_analysis package not installed ({e}).")
+    print(f"Missing dependencies or audio_classifier package not installed ({e}).")
     print("Installing requirements from requirements.txt...")
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"])
-        print("Installing local audio_analysis package in editable mode...")
+        print("Installing local audio_classifier package in editable mode...")
         subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", "."])
         print("All dependencies installed successfully!\n")
     except subprocess.CalledProcessError as install_err:
         print(f"Error during package installation: {install_err}")
         sys.exit(1)
 
-    from audio_analysis import load_config, AudioAnalysisOrchestrator, AudioCNNPredictor
+    from audio_classifier import load_config, AudioAnalysisOrchestrator, AudioCNNPredictor
 
 def run_test():
     print("=" * 80)

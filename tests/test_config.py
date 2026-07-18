@@ -2,7 +2,7 @@ import os
 import unittest
 import tempfile
 import shutil
-from audio_analysis import load_config
+from audio_classifier import load_config
 
 class TestConfigLoader(unittest.TestCase):
     def setUp(self):

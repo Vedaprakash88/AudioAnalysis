@@ -4,7 +4,7 @@ import tempfile
 import shutil
 import pandas as pd
 import numpy as np
-from audio_analysis import KNNAudioClassifier
+from audio_classifier import KNNAudioClassifier
 
 class TestKNNAudioClassifier(unittest.TestCase):
     def setUp(self):

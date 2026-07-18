@@ -75,7 +75,7 @@ python main.py
 
 You can also run the orchestrator directly in any Python script:
 ```python
-from audio_analysis import load_config, AudioAnalysisOrchestrator
+from audio_classifier import load_config, AudioAnalysisOrchestrator
 
 # Load configuration
 config = load_config()
@@ -98,7 +98,7 @@ orchestrator.run_pipeline(
 You can run inferences on new songs using the `AudioCNNPredictor` class. The predictor dynamically checks file extensions and supports **both raw audio tracks and pre-rendered spectrogram JPEGs**.
 
 ```python
-from audio_analysis import AudioCNNPredictor
+from audio_classifier import AudioCNNPredictor
 
 # Initialize predictor with your saved model name and feature type
 predictor = AudioCNNPredictor(
@@ -147,7 +147,7 @@ python -m unittest discover -s tests
 ├── pyproject.toml              # Library packaging configuration
 ├── requirements.txt            # System dependencies list
 ├── tests/                      # Package unit test suite
-└── audio_analysis/              # Core library package directory
+└── audio_classifier/            # Core library package directory
     ├── __init__.py              # Exposed package imports
     ├── config.py                # Configuration file loader
     ├── orchestrator.py          # Orchestrates training pipelines
