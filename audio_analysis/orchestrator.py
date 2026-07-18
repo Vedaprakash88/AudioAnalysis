@@ -1,6 +1,5 @@
 import os
-from .audio_feature_extractor import AudioFeatureExtractor
-from .audio_image_generator import AudioImageGenerator
+from .unified_processor import UnifiedAudioProcessor
 from .audio_cnn_classifier import AudioCNNClassifier
 from .xgb_feature_classifier import XGBFeatureClassifier
 from .knn_audio_classifier import KNNAudioClassifier
@@ -30,44 +29,35 @@ class AudioAnalysisOrchestrator:
         print("🚀 AUDIO ANALYSIS PIPELINE ORCHESTRATOR STARTED")
         print("="*80 + "\n")
 
-        # Step 1: Tabular CSV compilation directly from audio files
-        if run_feature_extractor:
-            print("--- STEP 1: EXTRACTING TABULAR AUDIO FEATURES (.csv) ---")
+        # Steps 1-3: Unified Audio Preprocessing (Tabular features, Mel Spectrogram, and MFCC image generation)
+        run_any_preprocessing = run_feature_extractor or run_mel_gen or run_mfcc_gen
+        if run_any_preprocessing:
+            print("--- STEPS 1-3: UNIFIED AUDIO PREPROCESSING ---")
             audio_root = self.config.get('audio_root_dir')
-            features_target = self.config.get('features_target_dir')
-            
-            if not audio_root or not features_target:
-                print("❌ Skipped Step 1: Missing 'audio_root_dir' or 'features_target_dir' in config.")
+            features_target = self.config.get('features_target_dir') if run_feature_extractor else None
+            melspec_target = self.config.get('melspec_target_dir') if run_mel_gen else None
+            mfcc_target = self.config.get('mfcc_target_dir') if run_mfcc_gen else None
+
+            if not audio_root:
+                print("❌ Skipped Steps 1-3: Missing 'audio_root_dir' in config.")
             else:
-                extractor = AudioFeatureExtractor(root_dir=audio_root, target_dir=features_target)
-                extractor.extract_all()
-                print("Completed tabular feature extraction and compilation.\n")
+                print("Configured options:")
+                print(f"  - Tabular features extraction: {'ENABLED' if run_feature_extractor else 'DISABLED'}")
+                print(f"  - Mel Spectrogram image generation: {'ENABLED' if run_mel_gen else 'DISABLED'}")
+                print(f"  - MFCC image generation: {'ENABLED' if run_mfcc_gen else 'DISABLED'}")
 
-        # Step 2: Generate Mel Spectrogram Images
-        if run_mel_gen:
-            print("--- STEP 2: GENERATING MEL SPECTROGRAM IMAGES ---")
-            audio_root = self.config.get('audio_root_dir')
-            melspec_target = self.config.get('melspec_target_dir')
-
-            if not audio_root or not melspec_target:
-                print("❌ Skipped Step 2: Missing 'audio_root_dir' or 'melspec_target_dir' in config.")
-            else:
-                generator = AudioImageGenerator(root_dir=audio_root, target_dir=melspec_target)
-                generator.generate_mel_spectrograms()
-                print("Completed Mel Spectrogram image generation.\n")
-
-        # Step 3: Generate MFCC Images
-        if run_mfcc_gen:
-            print("--- STEP 3: GENERATING MFCC IMAGES ---")
-            audio_root = self.config.get('audio_root_dir')
-            mfcc_target = self.config.get('mfcc_target_dir')
-
-            if not audio_root or not mfcc_target:
-                print("❌ Skipped Step 3: Missing 'audio_root_dir' or 'mfcc_target_dir' in config.")
-            else:
-                generator = AudioImageGenerator(root_dir=audio_root, target_dir=mfcc_target)
-                generator.generate_mfccs()
-                print("Completed MFCC image generation.\n")
+                processor = UnifiedAudioProcessor(
+                    root_dir=audio_root,
+                    features_target_dir=features_target,
+                    melspec_target_dir=melspec_target,
+                    mfcc_target_dir=mfcc_target
+                )
+                processor.run_pipeline(
+                    run_features=run_feature_extractor,
+                    run_mel=run_mel_gen,
+                    run_mfcc=run_mfcc_gen
+                )
+                print("Completed unified audio preprocessing steps.\n")
 
         # Step 4: Train CNN Image Classifier
         if run_cnn:

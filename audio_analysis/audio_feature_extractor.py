@@ -91,49 +91,23 @@ def _extract_tabular_features_direct_worker(filename):
         print(f"Error extracting tabular features for {filename}: {str(e)}")
         return None
 
+from .unified_processor import UnifiedAudioProcessor
+
 class AudioFeatureExtractor:
     """
     Extracts raw features and aggregates tabular DSP properties
     across all files in a root directory directly, saving them in a unified CSV.
+    Delegates to UnifiedAudioProcessor to load each file exactly once.
     """
     def __init__(self, root_dir, target_dir, num_processes=None):
         self.root_dir = root_dir
         self.target_dir = target_dir
-        self.num_processes = num_processes if num_processes is not None else multiprocessing.cpu_count()
+        self.num_processes = num_processes
 
     def extract_all(self):
-        audio_files = []
-        for path, _, files in os.walk(self.root_dir):
-            for file in files:
-                if file.lower().endswith(('.wav', '.mp3', '.flac', '.ogg')):
-                    audio_files.append(os.path.join(path, file))
-
-        print(f"Found {len(audio_files)} audio files to process.")
-        if not audio_files:
-            return
-
-        os.makedirs(self.target_dir, exist_ok=True)
-
-        print("\n--- Extracting tabular features directly from audio files ---")
-        
-        with multiprocessing.Pool(processes=self.num_processes) as pool:
-            tab_results = list(tqdm(pool.imap(_extract_tabular_features_direct_worker, audio_files),
-                                    total=len(audio_files),
-                                    desc="Compiling tabular features"))
-
-        # Filter out failed runs
-        valid_features = [res for res in tab_results if res is not None]
-
-        # Compile features into tabular CSV
-        if valid_features:
-            df = pd.DataFrame(valid_features)
-            csv_out_path = os.path.join(self.target_dir, "extracted_features.csv")
-            df.to_csv(csv_out_path, index=False)
-            print(f"Successfully compiled feature table to: {csv_out_path}")
-
-        successful = len(valid_features)
-        failed = len(audio_files) - successful
-        print(f"\nSummary:")
-        print(f"  Successfully processed: {successful} files")
-        print(f"  Failed: {failed} files")
-        print(f"  Total: {successful + failed} / {len(audio_files)}")
+        processor = UnifiedAudioProcessor(
+            root_dir=self.root_dir,
+            features_target_dir=self.target_dir,
+            num_processes=self.num_processes
+        )
+        processor.run_pipeline(run_features=True, run_mel=False, run_mfcc=False)

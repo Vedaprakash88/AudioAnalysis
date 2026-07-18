@@ -6,6 +6,7 @@ from .audio_cnn_predictor import AudioCNNPredictor
 from .xgb_feature_classifier import XGBFeatureClassifier
 from .knn_audio_classifier import KNNAudioClassifier
 from .orchestrator import AudioAnalysisOrchestrator
+from .unified_processor import UnifiedAudioProcessor
 
 __all__ = [
     'load_config',
@@ -15,5 +16,6 @@ __all__ = [
     'AudioCNNPredictor',
     'XGBFeatureClassifier',
     'KNNAudioClassifier',
-    'AudioAnalysisOrchestrator'
+    'AudioAnalysisOrchestrator',
+    'UnifiedAudioProcessor'
 ]
