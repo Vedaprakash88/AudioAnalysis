@@ -4,12 +4,20 @@ A clean, modular, and fully Object-Oriented pipeline for audio processing, spect
 
 ## 🚀 Key Features
 
+* **Unified Preprocessing (`UnifiedAudioProcessor`)**: Loads and decodes raw audio files exactly once from disk to extract tabular features, Mel JPEGs, and MFCC JPEGs in a single parallel loop. This reduces disk I/O and decoding overhead by up to 66% when running the full pipeline.
 * **Object-Oriented Design (OOP)**: Replaced procedural scripts with modular, reusable classes for extraction, generation, training, and inference.
 * **Installable Package**: Can be installed editably via pip (`pip install -e .`) and imported in any Python script.
 * **Auto-compiled Tabular Features**: Automatically aggregates 58 key DSP features (chroma, spectral centroids, HPSS harmony/percussive, tempo, and 20 MFCCs) from raw audio files into a unified GTZAN-style CSV.
 * **Unified In-Memory Predictor**: Infers directly from **either raw audio files or pre-rendered images** without creating temporary files on disk.
 * **In-Process Orchestration**: Run pipelines programmatically without spawning separate shell subprocesses.
 * **Configuration Loading**: Set folders, paths, and hyperparameters inside a `.ini` file.
+* **Auto-Dependency Installation & Robust Encoding**: Setup demo scripts to automatically bootstrap missing dependencies, editable-install the package, and set UTF-8 console output encoding to support decorative logging emojis on Windows.
+
+---
+
+## 📊 Dataset
+
+This pipeline is designed and tested using the **GTZAN Genre Classification** audio dataset, which can be downloaded from [Kaggle](https://www.kaggle.com/datasets/andradaolteanu/gtzan-dataset-music-genre-classification). The dataset consists of 1,000 audio tracks (each 30 seconds long) split evenly across 10 music genres: `blues`, `classical`, `country`, `disco`, `hiphop`, `jazz`, `metal`, `pop`, `reggae`, and `rock`.
 
 ---
 
@@ -143,10 +151,21 @@ python -m unittest discover -s tests
     ├── __init__.py              # Exposed package imports
     ├── config.py                # Configuration file loader
     ├── orchestrator.py          # Orchestrates training pipelines
-    ├── audio_feature_extractor.py  # Extracts waveforms, MFCCs, and compiles features CSV
-    ├── audio_image_generator.py    # Converts audio folders to JPEG spectrograms/MFCCs
+    ├── unified_processor.py     # Unifies extraction and spectrogram/MFCC image rendering in a single load pass
+    ├── audio_feature_extractor.py  # Extracts waveforms, MFCCs, and compiles features CSV (delegates to UnifiedAudioProcessor)
+    ├── audio_image_generator.py    # Converts audio folders to JPEG spectrograms/MFCCs (delegates to UnifiedAudioProcessor)
     ├── audio_cnn_classifier.py     # Prepares datasets and trains the CNN model
     ├── audio_cnn_predictor.py      # Runs inference on raw audio files or JPEG images
     ├── xgb_feature_classifier.py   # Fits, cross-validates and plots XGBoost features
     └── knn_audio_classifier.py     # Prepares and fits the KNN audio features model
+```
+
+---
+
+## 📋 Terminal Logs
+
+Paste and store run logs/terminal outputs here:
+
+```text
+# Paste your terminal logs here
 ```
