@@ -167,5 +167,201 @@ python -m unittest discover -s tests
 Paste and store run logs/terminal outputs here:
 
 ```text
-# Paste your terminal logs here
+(venv)
+[user]@Veda MINGW64 [workspace_root] (main)
+$ python demo_full_pipeline.py
+================================================================================
+🎬 STARTING FULL PATH PIPELINE DEMO & TEST
+================================================================================
+Reading configuration from: config.local.ini
+Overriding CNN epochs to 2 for a quick run.
+
+================================================================================
+🚀 AUDIO ANALYSIS PIPELINE ORCHESTRATOR STARTED
+================================================================================
+
+--- STEPS 1-3: UNIFIED AUDIO PREPROCESSING ---
+Configured options:
+  - Tabular features extraction: ENABLED
+  - Mel Spectrogram image generation: ENABLED
+  - MFCC image generation: ENABLED
+Found 999 audio files to process.
+Processing dataset in parallel using 16 processes...
+Preprocessing audio: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 999/999 [06:25<00:00,  2.59it/s]
+Successfully compiled feature table to: [output_dir]\ExtractedFeatures\extracted_features.csv
+
+Preprocessing Summary:
+  Successfully processed: 999 files
+  Failed: 0 files
+  Total: 999
+Completed unified audio preprocessing steps.
+
+--- STEP 4: TRAINING CNN CLASSIFIER ---
+CNN training configured to use: MEL images from [output_dir]\MelSpectrogramImages
+Cleanup completed. Removed 0 invalid files.
+Found classes: ['blues', 'classical', 'country', 'disco', 'hiphop', 'jazz', 'metal', 'pop', 'reggae', 'rock']
+Found 999 files belonging to 10 classes.
+2026-07-18 11:51:15.484360: I tensorflow/core/platform/cpu_feature_guard.cc:193] This TensorFlow binary is optimized with oneAPI Deep Neural Network Library (oneDNN) to use the following CPU instructions in performance-critical operations:  AVX AVX2
+To enable them in other operations, rebuild TensorFlow with the appropriate compiler flags.
+2026-07-18 11:51:16.283145: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1616] Created device /job:localhost/replica:0/task:0/device:GPU:0 with 1653 MB memory:  -> device: 0, name: NVIDIA GeForce RTX 3050 Laptop GPU, pci bus id: 0000:01:00.0, compute capability: 8.6
+Dataset split completed:
+  Total batches: 100
+  Train batches: 70
+  Val batches: 20
+  Test batches: 10
+Model: "sequential"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #
+=================================================================
+ conv2d (Conv2D)             (None, 256, 256, 16)      448
+
+ max_pooling2d (MaxPooling2D  (None, 128, 128, 16)     0
+ )
+
+ conv2d_1 (Conv2D)           (None, 126, 126, 32)      4640
+
+ max_pooling2d_1 (MaxPooling  (None, 63, 63, 32)       0
+ 2D)
+
+ conv2d_2 (Conv2D)           (None, 61, 61, 16)        4624
+
+ max_pooling2d_2 (MaxPooling  (None, 30, 30, 16)       0
+ 2D)
+
+ flatten (Flatten)           (None, 14400)             0
+
+ dense (Dense)               (None, 512)               7373312
+
+ dense_1 (Dense)             (None, 128)               65664
+
+ dense_2 (Dense)             (None, 10)                1290
+
+=================================================================
+Total params: 7,449,978
+Trainable params: 7,449,978
+Non-trainable params: 0
+_________________________________________________________________
+None
+Starting training...
+Epoch 1/2
+2026-07-18 11:51:19.748563: I tensorflow/stream_executor/cuda/cuda_dnn.cc:384] Loaded cuDNN version 8101
+2026-07-18 11:51:21.583300: I tensorflow/stream_executor/cuda/cuda_blas.cc:1614] TensorFloat-32 will be used for the matrix multiplication. This will only be logged once.
+69/70 [============================>.] - ETA: 0s - loss: 2.2727 - accuracy: 0.1362WARNING:absl:Found untraced functions such as _jit_compiled_convolution_op, _jit_compiled_convolution_op, _jit_compiled_convolution_op while saving (showing 3 of 3). These functions will not be directly callable after loading.
+70/70 [==============================] - 19s 202ms/step - loss: 2.2733 - accuracy: 0.1343 - val_loss: 2.1578 - val_accuracy: 0.1700
+Epoch 2/2
+70/70 [==============================] - ETA: 0s - loss: 2.0418 - accuracy: 0.2371WARNING:absl:Found untraced functions such as _jit_compiled_convolution_op, _jit_compiled_convolution_op, _jit_compiled_convolution_op while saving (showing 3 of 3). These functions will not be directly callable after loading.
+70/70 [==============================] - 16s 216ms/step - loss: 2.0418 - accuracy: 0.2371 - val_loss: 1.9789 - val_accuracy: 0.2000
+Training completed.
+Saved performance plots to [output_dir]\Models
+Evaluation Accuracy: 0.2020
+Model successfully saved to [output_dir]\Models\audio_classifier_Mel_spec_VCv1.h5
+Completed CNN classifier training.
+
+--- STEP 5: TRAINING XGBOOST FEATURE CLASSIFIER ---
+Loading data from [output_dir]\ExtractedFeatures\extracted_features.csv...
+Data preprocessed and split successfully.
+Training XGBoost Classifier...
+Training completed.
+
+========================================
+XGBoost Evaluation Results
+========================================
+Accuracy: 0.8000
+Accuracy via Score: 0.8000
+Confusion Matrix:
+[[17  0  2  0  0  0  0  0  0  2]
+ [ 0 12  0  0  0  0  0  0  0  0]
+ [ 0  0 19  0  0  1  0  0  0  4]
+ [ 0  0  0 15  2  0  0  1  2  2]
+ [ 1  0  0  0 12  0  0  0  1  1]
+ [ 0  1  0  0  0 26  0  0  0  0]
+ [ 0  0  0  0  0  0 18  0  0  0]
+ [ 0  0  0  0  1  0  0 16  2  0]
+ [ 2  0  0  1  1  0  1  2 15  0]
+ [ 1  0  4  2  1  0  1  0  1 10]]
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.81      0.81      0.81        21
+           1       0.92      1.00      0.96        12
+           2       0.76      0.79      0.78        24
+           3       0.83      0.68      0.75        22
+           4       0.71      0.80      0.75        15
+           5       0.96      0.96      0.96        27
+           6       0.90      1.00      0.95        18
+           7       0.84      0.84      0.84        19
+           8       0.71      0.68      0.70        22
+           9       0.53      0.50      0.51        20
+
+    accuracy                           0.80       200
+   macro avg       0.80      0.81      0.80       200
+weighted avg       0.80      0.80      0.80       200
+
+Running 10-fold cross-validation...
+Cross-validated accuracy: 0.7237 ± 0.0827
+Feature importance plot saved to [output_dir]\important_features.png
+Completed XGBoost feature classification.
+
+--- STEP 6: TRAINING KNN AUDIO CLASSIFIER ---
+Loading data from [output_dir]\ExtractedFeatures\extracted_features.csv...
+Data preprocessed and split successfully.
+Training KNN Classifier with 10 neighbors...
+KNN training completed.
+
+========================================
+KNN Audio Classifier Evaluation
+========================================
+Accuracy: 0.6650
+Confusion Matrix:
+[[16  0  3  0  0  0  1  0  0  1]
+ [ 0 11  0  0  0  1  0  0  0  0]
+ [ 1  0 16  2  0  1  0  0  1  3]
+ [ 0  0  0 14  0  0  1  2  1  4]
+ [ 0  0  0  2 10  0  1  1  1  0]
+ [ 1  7  2  0  0 16  0  0  0  1]
+ [ 0  0  0  1  0  0 16  0  0  1]
+ [ 0  1  3  1  0  0  0 14  0  0]
+ [ 1  0  5  1  3  0  1  0 11  0]
+ [ 0  0  4  1  1  0  1  2  2  9]]
+Classification Report:
+              precision    recall  f1-score   support
+
+       blues       0.84      0.76      0.80        21
+   classical       0.58      0.92      0.71        12
+     country       0.48      0.67      0.56        24
+       disco       0.64      0.64      0.64        22
+      hiphop       0.71      0.67      0.69        15
+        jazz       0.89      0.59      0.71        27
+       metal       0.76      0.89      0.82        18
+         pop       0.74      0.74      0.74        19
+      reggae       0.69      0.50      0.58        22
+        rock       0.47      0.45      0.46        20
+
+    accuracy                           0.67       200
+   macro avg       0.68      0.68      0.67       200
+weighted avg       0.69      0.67      0.67       200
+
+Confusion matrix plot saved to [output_dir]\knn_confusion_matrix.png
+Completed KNN audio classification.
+
+================================================================================
+🎉 ALL REQUESTED STEPS IN THE PIPELINE COMPLETED SUCCESSFULLY!
+================================================================================
+
+--- TESTING ON-THE-FLY INFERENCE ---
+Running inference on: [dataset_root]\blues\blues.00000.wav
+Loading model from: [output_dir]\Models\audio_classifier_Mel_spec_VCv1.h5
+Model loaded successfully.
+
+========================================
+🔮 PREDICTION RESULT
+========================================
+Song Path: [dataset_root]\blues\blues.00000.wav
+Predicted Class Index: 4
+Predicted Class Name:  hiphop
+Prediction Probabilities: [0.08797272 0.05863929 0.1034588  0.12052273 0.13836163 0.12594415
+ 0.04840442 0.09942099 0.1040507  0.11322454]
+================================================================================
+
+
 ```
